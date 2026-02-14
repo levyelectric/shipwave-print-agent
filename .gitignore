@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-signed-release/
+dist-signed-test/
+dist-unsigned/
+dist-unsigned-csp/
+dist-unsigned-dmg/
+*.dmg
+*.blockmap
+.DS_Store

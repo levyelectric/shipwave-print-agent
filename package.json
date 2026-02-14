@@ -1,0 +1,43 @@
+{
+  "name": "shipwave-print-agent",
+  "version": "1.0.0",
+  "description": "ShipWave Print Agent - automatic background label printing",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac --publish never",
+    "dist:dir": "electron-builder --mac dir --publish never",
+    "dist:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --publish never",
+    "dist:dir:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dir --publish never",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "author": "ShipWave",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "build": {
+    "appId": "app.shipwave.print-agent",
+    "productName": "ShipWave Print Agent",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": "dmg",
+      "icon": "assets/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist"
+    },
+    "dmg": {
+      "title": "ShipWave Print Agent"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*"
+    ]
+  }
+}

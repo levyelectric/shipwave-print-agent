@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https: http:;"
+  />
+  <title>ShipWave Print Agent</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #fff;
+      overflow: hidden;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .header h1 { font-size: 13px; font-weight: 600; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+    .dot.green { background: #22c55e; }
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #eab308; animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.5; } }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .tab:hover { color: #1a1a1a; }
+
+    .panel { display: none; padding: 12px 16px; overflow-y: auto; max-height: 400px; }
+    .panel.active { display: block; }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 12px;
+    }
+    .status-label { color: #666; }
+    .status-value { font-weight: 500; }
+    .status-value.error { color: #ef4444; }
+
+    .job-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 12px;
+    }
+    .job-item:last-child { border-bottom: none; }
+    .job-tracking { font-weight: 500; }
+    .job-time { color: #999; font-size: 11px; }
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge.completed { background: #dcfce7; color: #166534; }
+    .badge.failed { background: #fee2e2; color: #991b1b; }
+    .badge.pending { background: #e5e7eb; color: #374151; }
+
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+    }
+
+    .checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .checkbox-field input { width: auto; }
+
+    .btn {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #1a1a1a;
+    }
+    .btn:hover { background: #f9fafb; }
+    .btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .btn.primary:hover { background: #1d4ed8; }
+    .btn.danger { color: #ef4444; border-color: #fca5a5; }
+    .btn.danger:hover { background: #fef2f2; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid #e5e5e5;
+    }
+    .actions .btn { flex: 1; text-align: center; }
+
+    .empty { padding: 24px; text-align: center; color: #999; font-size: 12px; }
+
+    .save-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .action-msg {
+      min-height: 16px;
+      padding: 0 16px 8px;
+      font-size: 11px;
+      color: #166534;
+    }
+    .action-msg.error { color: #991b1b; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="dot" id="statusDot"></div>
+    <h1>ShipWave Print Agent</h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="status">Status</button>
+    <button class="tab" data-tab="jobs">Jobs</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </div>
+
+  <div class="panel active" id="panel-status">
+    <div class="status-row">
+      <span class="status-label">Connection</span>
+      <span class="status-value" id="connStatus">--</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Queue</span>
+      <span class="status-value" id="queueSize">0 jobs</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Last check</span>
+      <span class="status-value" id="lastCheck">--</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Printer</span>
+      <span class="status-value" id="printerDisplay">--</span>
+    </div>
+    <div class="status-row" id="errorRow" style="display:none">
+      <span class="status-label">Error</span>
+      <span class="status-value error" id="errorMsg"></span>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-jobs">
+    <div id="jobsList"></div>
+  </div>
+
+  <div class="panel" id="panel-settings">
+    <div class="field">
+      <label>API URL</label>
+      <input type="text" id="apiUrl" placeholder="https://shipwave.app" />
+    </div>
+    <div class="field">
+      <label>Agent Token</label>
+      <input type="password" id="agentToken" placeholder="Paste token from ShipWave settings" />
+    </div>
+    <div class="field">
+      <label>Printer</label>
+      <select id="printerSelect">
+        <option value="">Loading printers...</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Poll Interval (seconds)</label>
+      <input type="number" id="pollInterval" min="10" max="300" value="30" />
+    </div>
+    <div class="checkbox-field">
+      <input type="checkbox" id="autoLaunch" />
+      <label for="autoLaunch" style="margin:0;text-transform:none;font-weight:normal;font-size:13px;color:#1a1a1a">Start at login</label>
+    </div>
+    <div class="save-row">
+      <button class="btn primary" id="saveBtn">Save Settings</button>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="pollNowBtn">Check Now</button>
+    <button class="btn" id="testPrintBtn">Test Print</button>
+    <button class="btn danger" id="quitBtn">Quit</button>
+  </div>
+  <div class="action-msg" id="actionMsg"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
